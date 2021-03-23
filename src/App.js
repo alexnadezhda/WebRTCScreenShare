@@ -17,16 +17,23 @@ import Typography from '@material-ui/core/Typography';
 import Slide from '@material-ui/core/Slide';
 import VideoCamIcon from '@material-ui/icons/Videocam';
 import CallIcon from '@material-ui/icons/Call';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogActions from '@material-ui/core/DialogActions';
+import TextField from '@material-ui/core/TextField';
 import PhoneIcon from '@material-ui/icons/CallEnd';
 import VideoOnIcon from '@material-ui/icons/Videocam';
 import VideoOffIcon from '@material-ui/icons/VideocamOff';
 import MicIcon from '@material-ui/icons/Mic';
 import MicOffIcon from '@material-ui/icons/MicOff';
+import ScreenShareIcon from '@material-ui/icons/ScreenShare';
+import StopScreenShareIcon from '@material-ui/icons/StopScreenShare';
 import LocalVideoView from './LocalVideoView';
 import RemoteVideoView from './RemoteVideoView';
 import css from './layout.css';
 import Signaling from './Signaling';
-
+import $ from "jquery";
 const theme = createMuiTheme({
   palette: {
     primary: blue,
@@ -72,47 +79,63 @@ class App extends Component {
       remoteStream: null,
       audio_muted: false,
       video_muted: false,
+      share_muted:false,
+      room_name : ''
     };
+    this.getRender = this.getRender.bind(this);
+    this.addRoom = this.addRoom.bind(this);
   }
+  handleClickOpen = () => {
+    setOpen(true);
+  };
 
+  handleClose = () => {
+    setOpen(false);
+  };
   componentDidMount = () => {
-    var url = 'wss://' + window.location.hostname + ':4443';
-    this.signaling = new Signaling(url, "WebApp");
-    this.signaling.on('peers',(peers, self) => {
-      this.setState({peers, self_id: self});
-    });
-
-    this.signaling.on('new_call',(from, sessios) => {
-      this.setState({ open:true });
-    });
-
-    this.signaling.on('localstream',(stream) => {
-      this.setState({localStream: stream});
-    });
-
-    this.signaling.on('addstream',(stream) => {
-      this.setState({remoteStream: stream});
-    });
-
-    this.signaling.on('removestream',(stream) => {
-      this.setState({remoteStream: null});
-    });
-
-    this.signaling.on('call_end',(to, session) => {
-      this.setState({ open:false, localStream: null, remoteStream: null });
-    });
-
-    this.signaling.on('leave',(to) => {
-      this.setState({ open:false, localStream: null, remoteStream: null });
-    });
+    
   }
 
   handleClickOpen = () => {
     this.setState({ open: true });
   };
 
-  handleClose = () => {
-    this.setState({ open: false });
+  addRoom = () => {
+      this.setState({room_name : $("#room_name").val()})
+      var url = 'wss://' + window.location.hostname + ':4443';
+      console.log(this.state);
+      this.signaling = new Signaling(url, $("#room_name").val());
+      this.signaling.on('peers',(peers, self) => {
+        this.setState({peers, self_id: self});
+      });
+      this.signaling.on("share_scree",(from, sessions) => {
+        console.log("This is the test of the screen share");
+      });
+      this.signaling.on('new_call',(from, sessios) => {
+        this.setState({ open:true });
+      });
+
+      this.signaling.on('localstream',(stream) => {
+        this.setState({localStream: stream});
+      });
+
+      this.signaling.on('addstream',(stream) => {
+        this.setState({remoteStream: stream});
+      });
+
+      this.signaling.on('removestream',(stream) => {
+        this.setState({remoteStream: null});
+      });
+
+      this.signaling.on('call_end',(to, session) => {
+        this.setState({ open:false, localStream: null, remoteStream: null });
+      });
+
+      this.signaling.on('leave',(to) => {
+        this.setState({ open:false, localStream: null, remoteStream: null });
+      });
+      // setOpen(false);
+
   };
 
   handleInvitePeer = (peer_id, type) => {
@@ -143,6 +166,27 @@ class App extends Component {
       videoTracks[i].enabled = !muted;
     }
   }
+  /**
+     * share open/close
+     */
+   onShareOnClickHandler = (peer_id) => {
+    let share_muted = !this.state.share_muted;
+    this.onToggleLocalShareTrack(share_muted);
+    this.setState({ share_muted });
+    this.signaling.shareScreen(peer_id);
+  }
+
+  onToggleLocalShareTrack = (muted) => {
+    // var shareTracks = this.state.localStream.getShareTracks();
+    if (shareTracks.length === 0) {
+      console.log("No local share available.");
+      return;
+    }
+    console.log("Toggling share mute state.");
+    for (var i = 0; i < shareTracks.length; ++i) {
+      shareTracks[i].enabled = !muted;
+    }
+  }
 
   /**
      * mic open/close
@@ -153,6 +197,33 @@ class App extends Component {
     this.setState({ audio_muted });
   }
 
+  getRender(){
+    if(this.state.room_name == ""){
+      return <Dialog open={open} aria-labelledby="form-dialog-title">
+              <DialogTitle id="form-dialog-title">Add Room Name</DialogTitle>
+              <DialogContent>
+                <DialogContentText>
+                  To create vdieo calling room please insert the room name.
+                </DialogContentText>
+                <TextField
+                  autoFocus
+                  margin="dense"
+                  id="room_name"
+                  label="Room Name"
+                  type="Text"
+                  ref = "room_name"
+                  // onChange = {e => this.setState({...this.state, room_name: e.target.value})}
+                  fullWidth 
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={this.addRoom} color="primary">
+                  Add Room
+                </Button>
+              </DialogActions>
+            </Dialog>
+        }
+  }
 
   onToggleLocalAudioTrack = (muted) => {
     var audioTracks = this.state.localStream.getAudioTracks();
@@ -170,6 +241,7 @@ class App extends Component {
     const { classes } = this.props;
     return (
       <MuiThemeProvider theme={theme}>
+        {this.getRender()}
         <div className={classes.root}>
           <AppBar position="static">
             <Toolbar>
@@ -177,9 +249,9 @@ class App extends Component {
                 <MenuIcon />
               </IconButton>
               <Typography variant="title" color="inherit" className={classes.flex}>
-                Flutter WebRTC Demo
+                Video/Audio Calling Room
             </Typography>
-              {/*<Button color="inherit">Join</Button>*/}
+              {/* <Button color="inherit">Join</Button> */}
             </Toolbar>
           </AppBar>
           <List>
@@ -197,6 +269,11 @@ class App extends Component {
                           <IconButton color="primary" onClick={() => this.handleInvitePeer(peer.id, 'video')} className={classes.button} aria-label="Make a video call.">
                             <VideoCamIcon />
                           </IconButton>
+                          {/* <IconButton color="primary" onClick={() =>this.onShareOnClickHandler(peer.id, 'share')} className={classes.button} aria-label="Make a video call.">
+                          {
+                            this.state.share_muted ? <StopScreenShareIcon /> : <ScreenShareIcon />
+                          }
+                          </IconButton> */}
                         </div>
                       }
                     </ListItem>
@@ -239,6 +316,11 @@ class App extends Component {
               <Button variant="fab" mini color="primary" aria-label="add" style={styles.btnTool} onClick={this.onAudioClickHandler}>
                 {
                   this.state.audio_muted ? <MicOffIcon /> : <MicIcon />
+                }
+              </Button>
+              <Button variant="fab" mini color="primary" aria-label="add" style={styles.btnTool} onClick={this.onShareOnClickHandler}>
+                {
+                  this.state.share_muted ? <StopScreenShareIcon /> : <ScreenShareIcon />
                 }
               </Button>
             </div>

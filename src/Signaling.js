@@ -5,6 +5,9 @@ var RTCPeerConnection;
 var RTCSessionDescription;
 var configuration;
 
+// const monitorIcon = require('./icons/monitor')
+// const recordIcon = require('./icons/record')
+
 export default class Signaling extends events.EventEmitter {
 
     constructor(url, name) {
@@ -113,7 +116,25 @@ export default class Signaling extends events.EventEmitter {
             console.log('onclose::' + e.data);
         }
     }
-
+    shareScreen = (peer_id) =>{
+        navigator.mediaDevices.getDisplayMedia({video: true,audio: true})
+        .then(screenStream=>{
+            this.local_stream = screenStream;
+            var pc = this.createPeerConnection(peer_id, "video", true, screenStream);
+            this.emit('localstream', screenStream);
+            this.emit('share_screen', this.self_id, this.session_id);
+            
+        //     pc = this.createPeerConnection(peer_id, media, true, stream);
+        //     this.local_stream.replaceTrack(stream.getVideoTracks()[0],screenStream.getVideoTracks()[0],stream);
+        //     this.local_stream = screenStream;
+        //     //   userVideo.current.srcObject = screenStream;
+        //     screenStream.getTracks()[0].onended = () =>{
+        //         this.local_stream.replaceTrack(screenStream.getVideoTracks()[0],stream.getVideoTracks()[0],stream)
+        //         // userVideo.current.srcObject = stream
+        //         this.local_stream = stream;
+        //   }
+        })
+    }
     keepAlive = () => {
         this.send({ type: 'keepalive', data: {} });
         console.log('Sent keepalive ' + ++this.keepalive_cnt + ' times!');
@@ -297,7 +318,17 @@ export default class Signaling extends events.EventEmitter {
             }
         });
     }
-
+    // shareScreen = () => {
+    //     navigator.mediaDevices.getDisplayMedia({cursor:true})
+    //         .then(screenStream=>{
+    //         pc.replaceTrack(local_stream.getVideoTracks()[0],screenStream.getVideoTracks()[0],local_stream)
+    //         userVideo.current.srcObject=screenStream
+    //         screenStream.getTracks()[0].onended = () =>{
+    //         pc.current.replaceTrack(screenStream.getVideoTracks()[0],local_stream.getVideoTracks()[0],local_stream)
+    //         userVideo.current.srcObject=stream
+    //         }
+    //         })
+    // }
     onAnswer = (message) => {
         var data = message.data;
         var from = data.from;

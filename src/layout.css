@@ -11,4 +11,10 @@
     align-items: center;
   }
 
+  #share-status {
+      padding: 0.5em 1em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+  }
  

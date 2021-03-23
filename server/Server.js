@@ -117,7 +117,7 @@ export default class CallHandler {
         client_self.on("message", message => {
             try {
                 message = JSON.parse(message);
-                console.log("message.type:: " + message.type + ", \nbody: " + JSON.stringify(message));
+                // console.log("message.type:: " + message.type + ", \nbody: " + JSON.stringify(message));
             } catch (e) {
                 console.log(e.message);
             }
