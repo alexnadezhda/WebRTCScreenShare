@@ -102,7 +102,7 @@ class App extends Component {
 
   addRoom = () => {
       this.setState({room_name : $("#room_name").val()})
-      var url = 'wss://' + window.location.hostname + ':4443';
+      var url = 'ws://' + window.location.hostname + ':4443';
       console.log(this.state);
       this.signaling = new Signaling(url, $("#room_name").val());
       this.signaling.on('peers',(peers, self) => {
