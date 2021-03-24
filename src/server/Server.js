@@ -11,6 +11,7 @@ app.use(express.static(path.join(process.cwd(),"dist")));
 export default class CallHandler {
 
     constructor() {
+        console.log("This is the constructor");
         this.wss = null;
         this.ws = null;
         this.clients = new Set();
@@ -22,6 +23,7 @@ export default class CallHandler {
     init() {
 
         var ws_server_port = (process.env.PORT || 4442);
+        console.log("This is the Init function");
         this.server = http.createServer(app).listen(ws_server_port, () => {
             console.log("Start WS Server: bind => ws://0.0.0.0:"+ws_server_port);
         });
